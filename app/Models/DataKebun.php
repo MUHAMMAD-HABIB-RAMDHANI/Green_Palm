@@ -32,4 +32,11 @@ class DataKebun extends Model
     {
         return $this->hasMany(Pemupukan::class);
     }
+
+    public function panens()
+    {
+        // Parameter kedua ('data_kebun_id') adalah nama kolom foreign key di tabel panens.
+        // Sesuaikan jika nama kolom di database Anda berbeda (misal: 'kebun_id').
+        return $this->hasMany(Panen::class, 'kebun_id'); 
+    }
 }

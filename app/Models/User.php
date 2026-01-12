@@ -280,4 +280,22 @@ class User extends Authenticatable
     {
         return $this->helpRequests()->latest()->first();
     }
+
+    /**
+     * Relasi: Satu User memiliki banyak Kebun
+     */
+    public function kebuns()
+    {
+        // Pastikan model DataKebun sudah di-import atau panggil namespace lengkapnya
+        return $this->hasMany(DataKebun::class);
+    }
+
+    /**
+     * Relasi: Satu User memiliki banyak data Panen
+     */
+    public function panens()
+    {
+        // Pastikan model Panen sudah di-import
+        return $this->hasMany(Panen::class);
+    }
 }
