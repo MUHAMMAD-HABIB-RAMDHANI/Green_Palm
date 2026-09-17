@@ -13,6 +13,35 @@ use Illuminate\Routing\Controllers\Middleware;
 
 class HelpController extends Controller implements HasMiddleware // 2. IMPLEMENTS INTERFACE
 {
+    // FUNGSI UNTUK UNIT TEST: Klasifikasi Otomatis Pesan Bantuan
+    public function klasifikasiPesanBantuan($pesanBantuan)
+    {
+        // TC-05: Validasi jika pesan kosong
+        if (trim($pesanBantuan) === "" || $pesanBantuan === null) {
+            return "Error: Pesan kosong";
+        }
+
+        // Ubah ke huruf kecil semua agar pengecekan lebih mudah
+        $pesanLower = strtolower($pesanBantuan);
+
+        // TC-01: Cek Masalah Teknis (Prioritas Tinggi)
+        if (str_contains($pesanLower, 'error') || str_contains($pesanLower, 'gagal') || str_contains($pesanLower, 'rusak')) {
+            return "Tinggi: Teknis";
+        }
+
+        // TC-03: Cek Masalah Keuangan (Prioritas Sedang)
+        if (str_contains($pesanLower, 'harga') || str_contains($pesanLower, 'bayar') || str_contains($pesanLower, 'uang')) {
+            return "Sedang: Keuangan";
+        }
+
+        // TC-02: Cek Panduan Pengguna (Prioritas Rendah)
+        if (str_contains($pesanLower, 'cara') || str_contains($pesanLower, 'bagaimana') || str_contains($pesanLower, 'panduan')) {
+            return "Rendah: Panduan";
+        }
+
+        // TC-04: Jika tidak masuk kategori mana pun
+        return "Normal: Umum";
+    }
     /**
      * GANTI CONSTRUCTOR DENGAN STATIC FUNCTION MIDDLEWARE
      * Ini adalah cara baru di Laravel 11+

@@ -10,6 +10,38 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    // FUNGSI UNTUK UNIT TEST: Deteksi Kekuatan Password
+    public function cekKekuatanPassword($password)
+    {
+        // TC-05: Validasi Kosong
+        if ($password === null || $password === "") {
+            return "Error: Password kosong";
+        }
+
+        // TC-04: Validasi Panjang Karakter Minimal
+        if (strlen($password) < 8) {
+            return "Error: Terlalu Pendek";
+        }
+
+        // Mengecek kandungan di dalam string (Regex)
+        $adaHurufBesar = preg_match('/[A-Z]/', $password);
+        $adaHurufKecil = preg_match('/[a-z]/', $password);
+        $adaAngka      = preg_match('/[0-9]/', $password);
+        $adaSimbol     = preg_match('/[^a-zA-Z0-9]/', $password); // Selain huruf & angka
+
+        // TC-01: Paling ketat (Kuat)
+        if ($adaHurufBesar && $adaHurufKecil && $adaAngka && $adaSimbol) {
+            return "Kuat";
+        }
+
+        // TC-02: Sedang
+        if ($adaHurufBesar && $adaHurufKecil && $adaAngka) {
+            return "Sedang";
+        }
+
+        // TC-03: Sisanya dianggap lemah
+        return "Lemah";
+    }
     /**
      * ============================
      * 1. REGISTER
@@ -79,29 +111,38 @@ class AuthController extends Controller
     }
 
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ], [
-            'email.required' => 'Email wajib diisi',
-            'email.email' => 'Format email tidak valid',
-            'password.required' => 'Password wajib diisi',
-        ]);
+{
+    // 1. Validasi input dasar (harus diisi dan format email benar)
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ], [
+        'email.required' => 'Email wajib diisi',
+        'email.email' => 'Format email tidak valid',
+        'password.required' => 'Password wajib diisi',
+    ]);
 
-        // ✅ Gunakan Auth::attempt untuk login
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
-            $request->session()->regenerate();
+    // 2. Cari user berdasarkan email
+    $user = \App\Models\User::where('email', $request->email)->first();
 
-            // ✅ Redirect berdasarkan role admin atau user biasa
-            return $this->redirectBasedOnRole()
-                ->with('success', 'Login berhasil!');
-        }
-
+    // 3. Cek apakah user ditemukan
+    if (!$user) {
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'email' => 'Email tidak terdaftar.',
         ])->onlyInput('email');
     }
+
+    // 4. Cek apakah password cocok
+    if (!Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->filled('remember'))) {
+        return back()->withErrors([
+            'password' => 'Password salah.',
+        ])->onlyInput('email');
+    }
+
+    // 5. Jika semua benar
+    $request->session()->regenerate();
+    return $this->redirectBasedOnRole()->with('success', 'Login berhasil!');
+}
 
     /**
      * ============================

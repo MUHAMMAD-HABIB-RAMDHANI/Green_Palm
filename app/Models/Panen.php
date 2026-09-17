@@ -22,10 +22,12 @@ class Panen extends Model
         'total_upah_panen',
         'biaya_lainnya',
         'pendapatan', // <--- Pastikan kolom ini ada
+        'foto_panen',
     ];
 
     protected $casts = [
         'biaya_lainnya' => 'array', // Cast JSON ke array
+        // 'foto_panen' => 'array',
     ];
 
     // Relasi ke User

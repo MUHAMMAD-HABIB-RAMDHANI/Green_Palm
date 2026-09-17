@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     {{-- Google Font Poppins --}}
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         /* =============================================
@@ -54,6 +54,16 @@
         
         .sidebar-nav a.active { background: rgba(230, 241, 227, 0.15); color: #fff; font-weight: 600; border-left-color: #4ade80; }
         .sidebar-nav a.active .icon { opacity: 1; color: #4ade80; }
+
+        /* =============================================
+           BRAND TEXT DASHBOARD (DESKTOP & MOBILE)
+           ============================================= */
+        .brand-text-dashboard { font-weight: 800; letter-spacing: 1.5px; font-size: 20px; display: flex; justify-content: center; gap: 5px; margin-top: 15px; }
+        .mobile-brand-container { display: flex; align-items: center; gap: 8px; }
+        .mobile-brand-text { font-weight: 800; letter-spacing: 1px; font-size: 16px; display: flex; gap: 4px; }
+        
+        .text-green-static { background: linear-gradient(180deg, #6ee7b7 0%, #4ade80 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .text-palm-static { background: linear-gradient(180deg, #fbbf24 0%, #dfa91b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         /* =============================================
            MOBILE HEADER & MAIN CONTENT
@@ -142,8 +152,9 @@
             .sidebar-nav a.active { background: transparent; color: #4ade80; border-top-color: #4ade80; border-left-color: transparent; }
             
             /* Logic untuk Header Mobile Default */
-            .mobile-header { display: flex; align-items: center; justify-content: flex-start; padding: 10px 15px; width: 100%; position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-            .mobile-header .mobile-username { flex-grow: 1; text-align: left; padding-left: 20px; }
+            .mobile-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; width: 100%; position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: #1F4C2B; }
+            .mobile-logo { height: 38px; width: auto; }
+            .mobile-header .mobile-username { flex-grow: 0; margin-left: 0; padding: 6px 12px; font-size: 12px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; background: var(--light-green); color: var(--dark-green); border-radius: 10px; }
             
             /* Logic untuk Header Mobile Custom (Baru) */
             .mobile-header-custom {
@@ -157,9 +168,9 @@
                 left: 0;
                 z-index: 999;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                background: #ffffff; /* Bisa di-override inline */
+                background: #ffffff;
                 color: #222;
-                height: 70px; /* Samakan tinggi layout */
+                height: 70px;
             }
 
             .main-content { width: 100%; height: auto; padding: 80px 20px 90px 20px; }
@@ -170,16 +181,19 @@
 <body>
     
     {{-- LOGIC HEADER MOBILE --}}
-    {{-- Cek apakah halaman anak memiliki section 'mobile-header' --}}
     @hasSection('mobile-header')
-        {{-- Jika ADA, tampilkan header custom dari halaman tersebut --}}
         @yield('mobile-header')
     @else
-        {{-- Jika TIDAK ADA, tampilkan header default (Logo & User) --}}
         <header class="mobile-header">
-            <img src="{{ asset('images/logo.png') }}" alt="GreenPalm Logo" class="mobile-logo">
-            <div class="mobile-username">
-                👋 Halo, {{ Auth::user()->username ?? 'Petani' }}
+            <div class="mobile-brand-container">
+                <img src="{{ asset('images/logo.png') }}" alt="GreenPalm Logo" class="mobile-logo">
+                <div class="mobile-brand-text">
+                    <span class="text-green-static">GREEN</span>
+                    <span class="text-palm-static">PALM</span>
+                </div>
+            </div>
+            <div class="mobile-username" title="Halo, {{ Auth::user()->username ?? 'Petani' }}">
+                👋 {{ Auth::user()->username ?? 'Petani' }}
             </div>
         </header>
     @endif
@@ -188,6 +202,10 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <img src="{{ asset('images/logo.png') }}" alt="GreenPalm Logo" class="sidebar-logo">
+            <div class="brand-text-dashboard">
+                <span class="text-green-static">GREEN</span>
+                <span class="text-palm-static">PALM</span>
+            </div>
         </div>
 
         <div class="sidebar-nav-container">
@@ -278,7 +296,7 @@
 
     {{-- 3. GLOBAL DELETE MODAL (KONFIRMASI HAPUS - MERAH) --}}
     <div class="global-modal-overlay" id="globalDeleteModal">
-        <div class="logout-modal-box"> {{-- Reusing style merah logout --}}
+        <div class="logout-modal-box">
             <div class="logout-header">
                 <div class="logout-icon">🗑️</div>
                 <h2>Hapus Data?</h2>

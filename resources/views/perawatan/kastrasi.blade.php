@@ -170,6 +170,21 @@
         color: #888;
     }
 
+    .info-box {
+        background: var(--light-green);
+        border-left: 4px solid var(--primary-green);
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        color: #444;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .info-box strong {
+        color: var(--dark-green);
+    }
+
     .step-circle {
         width: 40px;
         height: 40px;
@@ -451,6 +466,14 @@
                 </div>
                 <div class="step-circle">2/2</div>
             </div>
+
+            {{-- Tambahan: Penjelasan Kastrasi --}}
+            <div class="info-box">
+                <strong>Apa itu Kastrasi?</strong> Kegiatan membuang bunga jantan, bunga betina, atau tandan buah muda pada sawit yang belum matang (biasanya umur 12–24 bulan), agar energi tanaman fokus untuk pertumbuhan sebelum mulai berbuah.
+            </div>
+
+            {{-- Form Start --}}
+            <form id="kastrasiForm" ...>
 
             {{-- Form Start --}}
             <form id="kastrasiForm" action="{{ route('catatan.store') }}" method="POST">

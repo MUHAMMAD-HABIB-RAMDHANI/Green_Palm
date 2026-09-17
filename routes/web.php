@@ -20,6 +20,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RatingController; // ✅ TAMBAHAN BARU
 use App\Http\Controllers\HelpController; // ✅ TAMBAHAN UNTUK BANTUAN
 use App\Models\Rating;
+use App\Http\Controllers\BeritaController;
 
 // ============================================================================
 // 1. HALAMAN UTAMA & AUTH ROUTES (GUEST)
@@ -32,6 +33,8 @@ Route::get('/', function () {
     // Kirim data $reviews ke view 'welcome'
     return view('welcome', compact('reviews'));
 })->name('welcome');
+
+Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.show');
 
 Route::get('/tentang-kami', function () {
     return view('about');

@@ -461,7 +461,7 @@
                     <div class="news-body">
                         <h5 class="news-title">GreenPalm Dukung Petani Muda Tingkatkan Kualitas Sawit</h5>
                         <p class="news-desc">Semangat baru tumbuh di kalangan generasi muda untuk mengelola perkebunan sawit dengan teknologi...</p>
-                        <a href="#" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
+                        <a href="{{ route('berita.show', 'petani-muda-tingkatkan-kualitas') }}" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
                     </div>
                 </div>
             </div>
@@ -471,7 +471,7 @@
                     <div class="news-body">
                         <h5 class="news-title">Harga Sawit Stabil, Petani Bengkalis Sumringah</h5>
                         <p class="news-desc">Dinas Perkebunan Bengkalis menegaskan bahwa harga jual tandan buah segar (TBS) kelapa sawit...</p>
-                        <a href="#" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
+                        <a href="{{ route('berita.show', 'harga-sawit-stabil-bengkalis') }}" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
                     </div>
                 </div>
             </div>
@@ -481,7 +481,7 @@
                     <div class="news-body">
                         <h5 class="news-title">Potensi Pasar Sawit Indonesia di Eropa</h5>
                         <p class="news-desc">Pemerintah menilai potensi pasar sawit Indonesia di Eropa semakin terbuka lebar dengan standar baru...</p>
-                        <a href="#" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
+                        <a href="{{ route('berita.show', 'potensi-pasar-eropa') }}" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
                     </div>
                 </div>
             </div>
@@ -491,7 +491,7 @@
                     <div class="news-body">
                         <h5 class="news-title">Tantangan Regulasi Baru Industri Sawit</h5>
                         <p class="news-desc">Pelaku industri sawit mulai mendiskusikan dampak dari regulasi denda terbaru yang diterapkan...</p>
-                        <a href="#" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
+                        <a href="{{ route('berita.show', 'tantangan-regulasi-baru') }}" class="news-link">Baca Selengkapnya <span>&rarr;</span></a>
                     </div>
                 </div>
             </div>

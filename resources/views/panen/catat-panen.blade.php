@@ -1,11 +1,26 @@
 @extends('layouts.app')
-
 @section('title', 'Catat Panen')
+
+{{-- ============================================================ --}}
+{{-- 1. DEFINISI HEADER MOBILE (Fixed Top)                        --}}
+{{-- ============================================================ --}}
+@section('mobile-header')
+    <header class="mobile-header-custom">
+        <div class="header-left-content">
+            <a href="{{ route('panen.index') }}" class="mobile-back-btn confirm-exit">
+                ‹
+            </a>
+            <h2 class="mobile-title">
+                Catat Panen
+            </h2>
+        </div>
+    </header>
+@endsection
 
 @section('content')
 
 <style>
-    /* --- VARIABLES & BASE --- */
+    /* --- VARIABLES --- */
     :root {
         --primary-green: #2b7a0b;
         --dark-green: #1e5607;
@@ -14,12 +29,53 @@
         --border-gray: #ccc;
     }
 
-    /* --- WRAPPER STYLE --- */
+    /* =========================================
+       STYLE MOBILE HEADER (Default: Hidden)
+       ========================================= */
+    .mobile-header-custom {
+        display: none;
+    }
+
+    .header-left-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .mobile-back-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(5px);
+        border-radius: 12px;
+        color: white;
+        text-decoration: none;
+        font-size: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: 0.3s;
+        flex-shrink: 0;
+        padding-bottom: 2px;
+    }
+
+    .mobile-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        white-space: nowrap;
+    }
+
+    /* --- DESKTOP BASE STYLES --- */
     .form-wrapper {
         background-color: var(--bg-gray);
-        padding: 20px;
-        font-family: 'Poppins', sans-serif;
         min-height: 90vh;
+        padding: 20px 30px;
+        font-family: 'Poppins', sans-serif;
         display: flex;
         justify-content: center;
         align-items: flex-start;
@@ -36,6 +92,8 @@
         animation: slideUp 0.5s ease;
         display: flex;
         flex-direction: column;
+        position: relative;
+        z-index: 1;
     }
 
     @keyframes slideUp {
@@ -43,14 +101,15 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* --- HEADER SECTION --- */
+    /* Header Desktop */
     .card-header {
-        background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
         padding: 20px 30px;
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
         display: flex;
         align-items: center;
         gap: 20px;
         color: white;
+        position: relative;
     }
 
     .btn-back {
@@ -80,11 +139,12 @@
         color: white;
     }
 
-    /* --- BODY CONTENT --- */
+    /* Body Content */
     .card-body {
         padding: 30px;
     }
 
+    /* Step Indicator */
     .step-header {
         display: flex;
         justify-content: space-between;
@@ -119,7 +179,7 @@
         font-size: 14px;
     }
 
-    /* --- FORM STYLES --- */
+    /* Form Styles */
     .form-group {
         margin-bottom: 20px;
     }
@@ -153,7 +213,6 @@
         color: #ccc;
     }
 
-    /* Readonly input style */
     .form-control[readonly] {
         background-color: #e9ecef;
         cursor: not-allowed;
@@ -188,12 +247,19 @@
         margin-bottom: 15px;
     }
 
-    /* Add Upah Button */
-    .btn-add-upah {
+    /* --- FOTO UPLOAD --- */
+    .photo-upload-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+
+    .btn-photo {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 20px;
+        padding: 12px 20px;
         background: white;
         border: 2px solid var(--primary-green);
         color: var(--primary-green);
@@ -202,14 +268,81 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: 15px;
+        flex: 1;
+        justify-content: center;
+        min-width: 140px;
     }
 
-    .btn-add-upah:hover {
+    .btn-photo:hover {
         background: #f4fff4;
     }
 
-    /* Upah Item */
+    .btn-photo:active {
+        transform: scale(0.98);
+    }
+
+    .photo-hint {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 15px;
+    }
+
+    .photo-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+    }
+
+    .photo-preview-item {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #eee;
+        background: #f4f4f4;
+    }
+
+    .photo-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .photo-preview-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 26px;
+        height: 26px;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .photo-preview-remove:hover {
+        background: #dc3545;
+    }
+
+    .photo-empty-state {
+        text-align: center;
+        padding: 25px 15px;
+        border: 2px dashed #ddd;
+        border-radius: 12px;
+        color: #aaa;
+        font-size: 13px;
+    }
+
+    /* Upah Item Style */
     .upah-item {
         display: flex;
         gap: 10px;
@@ -246,11 +379,31 @@
         background: #dc3545;
     }
 
-    /* --- ACTION BUTTONS --- */
+    .btn-add-upah {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: white;
+        border: 2px solid var(--primary-green);
+        color: var(--primary-green);
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+
+    .btn-add-upah:hover {
+        background: #f4fff4;
+    }
+
+    /* Action Buttons */
     .action-buttons {
         display: flex;
         gap: 15px;
-        margin-top: 20px;
+        margin-top: 30px;
     }
 
     .btn {
@@ -289,43 +442,74 @@
         transform: scale(0.98);
     }
 
-    /* --- RESPONSIVE --- */
+    /* --- RESPONSIVE (Wide layout on desktop, like Pemupukan) --- */
+    @media (min-width: 768px) {
+        .form-card { max-width: 800px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+        .card-body { padding: 40px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    }
+
     @media (max-width: 768px) {
+        .card-header { display: none !important; }
+
+        .mobile-header-custom {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 70px;
+            padding: 0 20px;
+            background: linear-gradient(135deg, #2b7a0b 0%, #1e5607 100%);
+            box-shadow: 0 4px 15px rgba(43, 122, 11, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+        }
+
         .form-wrapper {
-            padding: 15px;
+            margin-top: -80px;
+            margin-left: -20px;
+            margin-right: -20px;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding: 0 15px;
+            padding-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+            margin-top: 90px;
+            margin-bottom: 30px;
+            width: 100%;
         }
 
         .card-body {
             padding: 25px 20px;
         }
 
-        .upah-item {
-            flex-direction: column;
-        }
+        .upah-item { flex-direction: column; gap: 0; }
+        .btn-remove-upah { margin-top: 10px; width: 100%; border-radius: 8px; }
 
-        .btn-remove-upah {
-            margin-top: 0;
-            width: 100%;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
+        .photo-upload-buttons { flex-direction: column; }
     }
 </style>
 
 <div class="form-wrapper">
     <div class="form-card">
-        
-        {{-- Header --}}
+
+        {{-- Header Desktop (Akan hilang di Mobile) --}}
         <div class="card-header">
-            <a href="{{ route('panen.index') }}" class="btn-back">‹</a> 
+            <a href="{{ route('panen.index') }}" class="btn-back">‹</a>
             <h1 class="card-title">Catat Panen</h1>
         </div>
 
         {{-- Body --}}
         <div class="card-body">
-            
+
             {{-- Step Header --}}
             <div class="step-header">
                 <div class="step-title">
@@ -336,7 +520,7 @@
             </div>
 
             {{-- Form Start --}}
-            <form action="{{ route('panen.store') }}" method="POST" id="form-panen">
+            <form action="{{ route('panen.store') }}" method="POST" id="form-panen" enctype="multipart/form-data">
                 @csrf
 
                 {{-- 1. Pilih Kebun --}}
@@ -360,73 +544,107 @@
                     <div class="section-title-form">Hasil Panen & Penjualan</div>
                 </div>
 
-                {{-- 2. Tanggal Panen --}}
-                <div class="form-group">
-                    <label class="form-label">Tanggal Panen <span style="color: red;">*</span></label>
-                    <input type="date" name="tanggal_panen" class="form-control" value="{{ old('tanggal_panen') }}" required>
-                    @error('tanggal_panen')
-                        <span class="text-danger">{{ $message }}</span>
-                    @enderror
+                {{-- Row: Tanggal Panen & Berat Total TBS --}}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Panen <span style="color: red;">*</span></label>
+                        <input type="date" name="tanggal_panen" class="form-control" value="{{ old('tanggal_panen') }}" required>
+                        @error('tanggal_panen')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Berat Total TBS (kg) <span style="color: red;">*</span></label>
+                        <input type="number" step="0.01" name="berat_total_tbs" id="berat_total" class="form-control"
+                               placeholder="Masukkan total berat TBS" value="{{ old('berat_total_tbs') }}" required>
+                        @error('berat_total_tbs')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
                 </div>
 
-                {{-- 3. Berat Total TBS (kg) --}}
-                <div class="form-group">
-                    <label class="form-label">Berat Total TBS (kg) <span style="color: red;">*</span></label>
-                    <input type="number" step="0.01" name="berat_total_tbs" id="berat_total" class="form-control" 
-                           placeholder="Masukkan total berat TBS" value="{{ old('berat_total_tbs') }}" required>
-                    @error('berat_total_tbs')
-                        <span class="text-danger">{{ $message }}</span>
-                    @enderror
-                </div>
+                {{-- Row: Harga TBS & Estimasi Pendapatan --}}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Harga TBS saat ini (Rp/kg) <span style="color: red;">*</span></label>
+                        <input type="number" step="1" name="harga_tbs" id="harga_tbs" class="form-control"
+                               placeholder="Contoh: 2500" value="{{ old('harga_tbs') }}" required>
+                        @error('harga_tbs')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
 
-                {{-- 4. Harga TBS per Kg (Input Baru) --}}
-                <div class="form-group">
-                    <label class="form-label">Harga TBS saat ini (Rp/kg) <span style="color: red;">*</span></label>
-                    <input type="number" step="1" name="harga_tbs" id="harga_tbs" class="form-control" 
-                           placeholder="Contoh: 2500" value="{{ old('harga_tbs') }}" required>
-                    @error('harga_tbs')
-                        <span class="text-danger">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- 5. Estimasi Pendapatan (Readonly - Auto Calculate) --}}
-                <div class="form-group">
-                    <label class="form-label">Estimasi Pendapatan Kotor</label>
-                    <input type="text" id="estimasi_pendapatan" class="form-control" 
-                           style="background-color: #e9ecef; font-weight: bold; color: var(--dark-green);" 
-                           value="Rp 0" readonly>
-                    <small class="text-muted">Otomatis dihitung (Berat Total × Harga)</small>
+                    <div class="form-group">
+                        <label class="form-label">Estimasi Pendapatan Kotor</label>
+                        <input type="text" id="estimasi_pendapatan" class="form-control"
+                               style="background-color: #e9ecef; font-weight: bold; color: var(--dark-green);"
+                               value="Rp 0" readonly>
+                    </div>
                 </div>
 
                 <div class="section-divider">
                     <div class="section-title-form">Detail Tambahan</div>
                 </div>
 
-                {{-- 6. Jumlah TBS (Jika Ada) --}}
-                <div class="form-group">
-                    <label class="form-label">Jumlah Tandan (Janjang) (Opsional)</label>
-                    <input type="number" name="jumlah_tbs" class="form-control" placeholder="Masukkan jumlah janjang" value="{{ old('jumlah_tbs') }}">
-                    @error('jumlah_tbs')
-                        <span class="text-danger">{{ $message }}</span>
-                    @enderror
+                {{-- Row: Jumlah Tandan & Berat Brondolan --}}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Jumlah Tandan (Janjang) (Opsional)</label>
+                        <input type="number" name="jumlah_tbs" class="form-control" placeholder="Masukkan jumlah janjang" value="{{ old('jumlah_tbs') }}">
+                        @error('jumlah_tbs')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Berat Brondolan (kg) (Opsional)</label>
+                        <input type="number" step="0.01" name="berat_brondolan" class="form-control" placeholder="Masukkan berat brondolan" value="{{ old('berat_brondolan') }}">
+                        @error('berat_brondolan')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
                 </div>
 
-                {{-- 7. Berat Brondolan (kg) (Jika Ada) --}}
-                <div class="form-group">
-                    <label class="form-label">Berat Brondolan (kg) (Opsional)</label>
-                    <input type="number" step="0.01" name="berat_brondolan" class="form-control" placeholder="Masukkan berat brondolan" value="{{ old('berat_brondolan') }}">
-                    @error('berat_brondolan')
-                        <span class="text-danger">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- 8. Tanggal Panen Berikutnya --}}
+                {{-- Tanggal Panen Berikutnya --}}
                 <div class="form-group">
                     <label class="form-label">Perkiraan Panen Berikutnya</label>
                     <input type="date" name="tanggal_panen_berikutnya" class="form-control" value="{{ old('tanggal_panen_berikutnya') }}">
                     @error('tanggal_panen_berikutnya')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
+                </div>
+
+                {{-- Section: Foto Bukti Panen --}}
+                <div class="section-divider">
+                    <div class="section-title-form">Foto Bukti Panen (Opsional)</div>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                        Unggah foto hasil panen sebagai dokumentasi. Mendukung format JPG, PNG, WEBP, GIF, HEIC/HEIF, dan BMP.
+                    </p>
+                </div>
+
+                <div class="photo-upload-buttons">
+                    <button type="button" class="btn-photo" id="btnCamera" style="display:none;">
+                        <span>📷</span><span>Ambil Foto</span>
+                    </button>
+                    <button type="button" class="btn-photo" id="btnGallery">
+                        <span id="galleryIcon">🖼️</span><span id="galleryLabel">Pilih dari Galeri</span>
+                    </button>
+                </div>
+                <div class="photo-hint" id="photoHint"></div>
+
+                {{-- Input tersembunyi untuk kamera --}}
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+
+                {{-- Input tersembunyi untuk galeri / file explorer --}}
+                <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;">
+
+                {{-- Input final yang benar-benar dikirim ke server --}}
+                <input type="file" name="foto_panen[]" id="finalFileInput" multiple style="display:none;">
+
+                <div id="photoPreviewContainer">
+                    <div class="photo-empty-state" id="photoEmptyState">Belum ada foto dipilih</div>
+                    <div class="photo-preview-grid" id="photoPreviewGrid"></div>
                 </div>
 
                 {{-- Section: Upah Panen & Biaya Lainnya --}}
@@ -437,9 +655,7 @@
                     </p>
                 </div>
 
-                <div id="upah-container">
-                    {{-- Dynamic upah items akan ditambahkan di sini --}}
-                </div>
+                <div id="upah-container"></div>
 
                 <button type="button" class="btn-add-upah" onclick="addUpahItem()">
                     <span style="font-size: 18px;">+</span>
@@ -453,13 +669,11 @@
                 </div>
 
             </form>
-            {{-- Form End --}}
 
         </div>
     </div>
 </div>
 
-{{-- JavaScript untuk Dynamic Upah & Kalkulasi Pendapatan --}}
 <script>
     /* --- LOGIKA UPAH DINAMIS --- */
     let upahCounter = 0;
@@ -467,7 +681,7 @@
     function addUpahItem() {
         upahCounter++;
         const container = document.getElementById('upah-container');
-        
+
         const upahItem = document.createElement('div');
         upahItem.className = 'upah-item';
         upahItem.id = `upah-${upahCounter}`;
@@ -482,7 +696,7 @@
             </div>
             <button type="button" class="btn-remove-upah" onclick="removeUpahItem(${upahCounter})">×</button>
         `;
-        
+
         container.appendChild(upahItem);
     }
 
@@ -504,21 +718,125 @@
             const harga = parseFloat(hargaInput.value) || 0;
             const total = berat * harga;
 
-            // Format ke Rupiah
-            estimasiOutput.value = new Intl.NumberFormat('id-ID', { 
-                style: 'currency', 
+            estimasiOutput.value = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
                 currency: 'IDR',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             }).format(total);
         }
 
-        // Pasang event listener
-        if(beratInput && hargaInput) {
+        if (beratInput && hargaInput) {
             beratInput.addEventListener('input', hitungPendapatan);
             hargaInput.addEventListener('input', hitungPendapatan);
         }
     });
+
+    /* =========================================================
+       LOGIKA UPLOAD FOTO (Kamera + Galeri, Multi-format)
+       ========================================================= */
+    (function() {
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+
+        const btnCamera = document.getElementById('btnCamera');
+        const btnGallery = document.getElementById('btnGallery');
+        const galleryLabel = document.getElementById('galleryLabel');
+        const galleryIcon = document.getElementById('galleryIcon');
+        const cameraInput = document.getElementById('cameraInput');
+        const galleryInput = document.getElementById('galleryInput');
+        const finalFileInput = document.getElementById('finalFileInput');
+        const previewGrid = document.getElementById('photoPreviewGrid');
+        const emptyState = document.getElementById('photoEmptyState');
+        const photoHint = document.getElementById('photoHint');
+
+        const MAX_FILES = 5;
+        const MAX_SIZE_MB = 10;
+        let selectedFiles = [];
+
+        // Tampilkan tombol kamera hanya di perangkat mobile.
+        // Di laptop/PC, browser tidak mendukung akses kamera langsung via input file,
+        // sehingga hanya tombol "Pilih File" yang ditampilkan.
+        if (isMobile) {
+            btnCamera.style.display = 'inline-flex';
+            galleryLabel.textContent = 'Pilih dari Galeri';
+            galleryIcon.textContent = '🖼️';
+            photoHint.textContent = `Maksimal ${MAX_FILES} foto, ukuran masing-masing di bawah ${MAX_SIZE_MB}MB.`;
+        } else {
+            galleryLabel.textContent = 'Pilih File';
+            galleryIcon.textContent = '📁';
+            photoHint.textContent = `Pilih dari file explorer. Maksimal ${MAX_FILES} foto, ukuran masing-masing di bawah ${MAX_SIZE_MB}MB.`;
+        }
+
+        btnCamera.addEventListener('click', () => cameraInput.click());
+        btnGallery.addEventListener('click', () => galleryInput.click());
+
+        cameraInput.addEventListener('change', (e) => handleNewFiles(e.target.files));
+        galleryInput.addEventListener('change', (e) => handleNewFiles(e.target.files));
+
+        function handleNewFiles(fileList) {
+            const incoming = Array.from(fileList || []);
+
+            incoming.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+
+                if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+                    alert(`File "${file.name}" melebihi ${MAX_SIZE_MB}MB dan dilewati.`);
+                    return;
+                }
+
+                if (selectedFiles.length >= MAX_FILES) {
+                    alert(`Maksimal ${MAX_FILES} foto.`);
+                    return;
+                }
+
+                selectedFiles.push(file);
+            });
+
+            // Reset input agar file yang sama bisa dipilih ulang jika perlu
+            cameraInput.value = '';
+            galleryInput.value = '';
+
+            syncFinalInput();
+            renderPreviews();
+        }
+
+        function syncFinalInput() {
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            finalFileInput.files = dataTransfer.files;
+        }
+
+        function renderPreviews() {
+            previewGrid.innerHTML = '';
+
+            if (selectedFiles.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const item = document.createElement('div');
+                    item.className = 'photo-preview-item';
+                    item.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview ${index + 1}">
+                        <button type="button" class="photo-preview-remove" data-index="${index}">×</button>
+                    `;
+                    previewGrid.appendChild(item);
+
+                    item.querySelector('.photo-preview-remove').addEventListener('click', function() {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        selectedFiles.splice(idx, 1);
+                        syncFinalInput();
+                        renderPreviews();
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    })();
 </script>
 
 @endsection

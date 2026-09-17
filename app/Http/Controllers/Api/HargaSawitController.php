@@ -60,7 +60,7 @@ class HargaSawitController extends Controller
     public function show($id)
     {
         try {
-            $ram = Ram::with('user')->findOrFail($id); 
+            $ram = Ram::with('user')->findOrFail($id);
             Carbon::setLocale('id');
 
             $data = [
@@ -93,7 +93,7 @@ class HargaSawitController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error', 
+                'status' => 'error',
                 'message' => 'Data RAM tidak ditemukan'
             ], 404);
         }

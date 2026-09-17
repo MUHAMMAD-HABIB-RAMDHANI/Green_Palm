@@ -167,6 +167,31 @@
         .register-text a:hover { filter: brightness(1.2); }
         .register-text a:hover:after { width: 100%; }
 
+        .error-message {
+    color: #ef4444; /* Warna merah */
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    margin-top: 5px;
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.input.is-invalid {
+    border: 2px solid #ff4d4d !important;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.1) !important;
+}
+.input.is-invalid {
+    animation: shake 0.2s ease-in-out 0s 2;
+}
+/* Animasi getar sedikit saat error (Opsional tapi keren) */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
         /* RESPONSIVE */
         @media (max-width: 992px) {
             .layout { flex-direction: column; }
@@ -234,29 +259,57 @@
             <div class="login-subtitle">Please login or sign up to continue<br>using our app</div>
             
             <form method="POST" action="{{ route('login') }}">
-                @csrf <div class="input-group">
-                    <label class="label">Email</label>
-                    <input type="email" class="input" name="email" value="{{ old('email') }}" placeholder="nama@email.com" required>
-                </div>
+    @csrf 
+    
+    <div class="input-group">
+    <label class="label">Email</label>
+    <input type="email" 
+           name="email" 
+           value="{{ old('email') }}" 
+           class="input @error('email') is-invalid @enderror" 
+           placeholder="nama@email.com" 
+           required>
+    @error('email')
+        <span class="error-message" style="color: #ff4d4d; font-size: 13px; display: block; text-align: left; margin-top: 5px;">
+            {{ $message }}
+        </span>
+    @enderror
+</div>
 
-                <div class="input-group">
-                    <label class="label">Password</label>
-                    <div class="password-wrap">
-                        <input type="password" id="password" class="input" name="password" placeholder="••••••••" required>
-                        <img src="{{ asset('images/icons/eye.png') }}" class="eye" onclick="togglePassword()" alt="Toggle password" onerror="this.style.display='none'">
-                    </div>
-                </div>
+<div class="input-group">
+    <label class="label">Password</label>
+    <div class="password-wrap">
+        <input type="password" 
+               id="password" 
+               name="password" 
+               class="input @error('password') is-invalid @enderror" 
+               placeholder="••••••••" 
+               required>
+        <img src="{{ asset('images/icons/eye.png') }}" class="eye" onclick="togglePassword()" alt="Toggle">
+    </div>
+    @error('password')
+        <span class="error-message" style="color: #ff4d4d; font-size: 13px; display: block; text-align: left; margin-top: 5px;">
+            {{ $message }}
+        </span>
+    @enderror
+</div>
 
-                <div class="forgot">
-                    <a href="{{ route('password.forgot') }}">Lupa Password?</a>
-                </div>
+    <div class="forgot">
+        <a href="{{ route('password.forgot') }}">Lupa Password?</a>
+    </div>
 
-                <button class="btn-login" type="submit">Masuk</button>
+    <button class="btn-login" type="submit">Masuk</button>
+    
+    @if ($errors->has('loginError'))
+        <div class="error-message" style="text-align: center; margin-top: 15px;">
+            {{ $errors->first('loginError') }}
+        </div>
+    @endif
 
-                <div class="register-text">
-                    Belum punya akun? <a href="{{ route('register') }}">Daftar Sekarang</a>
-                </div>
-            </form>
+    <div class="register-text">
+        Belum punya akun? <a href="{{ route('register') }}">Daftar Sekarang</a>
+    </div>
+</form>
         </div>
     </div>
 </div>

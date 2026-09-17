@@ -10,6 +10,39 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminHamaController extends Controller
 {
+    // =================================================================
+    // FUNGSI UNTUK UNIT TEST: Logika Perbedaan Create dan Edit
+    // =================================================================
+    public function validasiFormHama($mode, $nama, $namaFileFoto)
+    {
+        $pesan = "Error: Mode tidak dikenal"; // Nilai default penampung pesan
+        $fotoKosong = ($namaFileFoto === null || trim($namaFileFoto) === "");
+
+        // 1. Validasi Nama
+        if ($nama === null || trim($nama) === "") {
+            $pesan = "Error: Nama hama wajib diisi";
+        }
+        // 2. Validasi Format Ekstensi File (JIKA admin mengunggah file)
+        elseif (!$fotoKosong && !in_array(strtolower(pathinfo($namaFileFoto, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png'])) {
+            $pesan = "Error: Format foto tidak valid (hanya jpg, jpeg, png)";
+        }
+        // 3. Logika Khusus Mode CREATE (Tambah Data)
+        elseif ($mode === 'create') {
+            $pesan = $fotoKosong
+                ? "Error: Foto wajib diunggah untuk data baru"
+                : "Valid: Data baru siap disimpan";
+        }
+        // 4. Logika Khusus Mode EDIT (Perbarui Data)
+        elseif ($mode === 'edit') {
+            $pesan = $fotoKosong
+                ? "Valid: Update teks saja (tanpa ubah foto)"
+                : "Valid: Update teks dan ganti foto baru";
+        }
+
+        // Hanya ada satu return di akhir fungsi
+        return $pesan;
+    }
+    
     public function index()
     {
         $hamas = Hama::orderBy('created_at', 'desc')->paginate(10);
@@ -37,7 +70,10 @@ class AdminHamaController extends Controller
             $data['image'] = $request->file('image')->store('hama', 'public');
         }
 
-        Hama::create($data);
+        // ... (kode validasi dan upload file sebelumnya tetap sama)
+
+        // ✅ PERBAIKAN: Tampung hasil create ke dalam variabel $hama
+        $hama = Hama::create($data);
 
         // ✅ BROADCAST NOTIFICATION: Data hama baru
         Notification::create([
@@ -50,7 +86,8 @@ class AdminHamaController extends Controller
             'read_at' => null,
 
             'data'    => [
-                'hama_id' => $hama->id, // Kirim ID agar Android bisa buka Detail
+                // Sekarang $hama sudah terdefinisi, sehingga $hama->id bisa dipanggil dengan aman
+                'hama_id' => $hama->id,
                 'jenis'   => 'hama'
             ],
         ]);
@@ -76,11 +113,12 @@ class AdminHamaController extends Controller
         ]);
 
         $hama = Hama::findOrFail($id);
-        $oldName = $hama->name;
+        
+        // ✅ PERBAIKAN: Baris $oldName = $hama->name; dihapus
+        
         $data = $request->only(['name', 'latin_name', 'description', 'solution']);
 
         if ($request->hasFile('image')) {
-            // Hapus gambar lama
             if ($hama->image) {
                 Storage::disk('public')->delete($hama->image);
             }
@@ -100,7 +138,7 @@ class AdminHamaController extends Controller
             'read_at' => null,
 
             'data'    => [
-                'hama_id' => $hama->id, // Kirim ID agar Android bisa buka Detail
+                'hama_id' => $hama->id,
                 'jenis'   => 'hama'
             ],
         ]);

@@ -113,9 +113,21 @@
         /* =============================================
            MODAL & TOAST
            ============================================= */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: none; z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-box { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-top: 6px solid var(--danger-red); }
+        .modal-box { 
+            background: white; 
+            width: 90%; 
+            max-width: 450px; 
+            padding: 30px; 
+            border-radius: 20px; 
+            text-align: center; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            transform: translateY(20px); 
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border-top: 6px solid var(--danger-red); 
+            overflow: hidden;
+        }
         .modal-overlay.active .modal-box { transform: translateY(0); }
         .modal-icon { font-size: 50px; color: var(--danger-red); margin-bottom: 15px; animation: shake 0.5s ease-in-out; }
         @keyframes shake { 0% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } 100% { transform: rotate(0deg); } }
@@ -128,6 +140,84 @@
         .btn-cancel:hover { background: #e2e8f0; }
         .btn-confirm { background: var(--danger-red); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
         .btn-confirm:hover { background: #dc2626; transform: translateY(-2px); }
+
+        /* Reply Modal specific styles */
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #2b7a0b 0%, #1E4620 100%);
+            border-radius: 20px 20px 0 0;
+        }
+        .modal-header h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .modal-close:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        .modal-body {
+            padding: 20px 25px;
+        }
+
+        .custom-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #334155;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .custom-input:focus {
+            outline: none;
+            border-color: #2b7a0b;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 15px 25px 25px;
+        }
+
+        .btn-submit {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #2b7a0b 0%, #1E4620 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(43, 122, 11, 0.3);
+        }
 
         .gp-toast-container { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
         .gp-toast { min-width: 280px; max-width: 92vw; padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); text-align: center; opacity: 0; transform: translateY(-14px); transition: transform 0.25s ease, opacity 0.25s ease; pointer-events: auto; }
@@ -266,6 +356,44 @@
         </div>
     </div>
 
+    {{-- Modal Reply --}}
+<div id="replyModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 600px; text-align: left; padding: 0; border-top-color: #2b7a0b;">
+        <div class="modal-header">
+            <h3>💬 Balas Pesan</h3>
+            <button onclick="closeReplyModal()" class="modal-close">×</button>
+        </div>
+        
+        <form id="replyForm" method="POST">
+            @csrf
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #64748b;">
+                    Balas pesan dari: <strong id="replyUsername" style="color: #1E4620;"></strong>
+                </p>
+                
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1E4620;">
+                    Balasan Anda
+                </label>
+                <textarea 
+                    name="admin_reply" 
+                    id="adminReply" 
+                    required 
+                    maxlength="1000"
+                    class="custom-input"
+                    placeholder="Tulis balasan untuk user..."></textarea>
+                <div style="text-align: right; font-size: 12px; color: #94a3b8; margin-top: 5px;">
+                    <span id="replyCharCount">0</span> / 1000 karakter
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" onclick="closeReplyModal()" class="btn-modal btn-cancel">Batal</button>
+                <button type="submit" class="btn-submit">📤 Kirim Balasan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
     <script>
         // Page Transition
         document.querySelectorAll(".sidebar-nav a").forEach(link => {
@@ -360,6 +488,35 @@
 
         // Jalankan saat halaman dimuat
         document.addEventListener('DOMContentLoaded', attachDeleteHandlers);
+
+        let currentHelpId = null;
+
+    function openReplyModal(helpId, username) {
+        closeDeleteModal();
+    closeLogoutModal();
+    currentHelpId = helpId;
+    document.getElementById('replyUsername').textContent = username;
+    document.getElementById('replyForm').action = `/admin/bantuan/${helpId}/reply`;
+    document.getElementById('replyModal').classList.add('active'); // ← changed
+    document.body.style.overflow = 'hidden';
+}
+
+function closeReplyModal() {
+    document.getElementById('replyModal').classList.remove('active'); // ← changed
+    document.getElementById('adminReply').value = '';
+    document.getElementById('replyCharCount').textContent = '0';
+    document.body.style.overflow = '';
+}
+
+    // Character counter
+    document.getElementById('adminReply').addEventListener('input', function() {
+        document.getElementById('replyCharCount').textContent = this.value.length;
+    });
+
+    // Close modal on outside click
+    document.getElementById('replyModal').addEventListener('click', function(e) {
+    if (e.target === this) closeReplyModal(); // already correct, no change needed
+});
 
     </script>
     

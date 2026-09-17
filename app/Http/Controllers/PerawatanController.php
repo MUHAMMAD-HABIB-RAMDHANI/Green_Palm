@@ -15,6 +15,42 @@ use App\Models\DataKebun;
 
 class PerawatanController extends Controller
 {
+    // FUNGSI UNTUK UNIT TEST: Logika Rekomendasi Pemupukan
+    public function rekomendasiPupuk($usiaBulan, $jenisTanah)
+    {
+        // 1. Validasi Input Usia (TC-05)
+        if ($usiaBulan < 0) {
+            return "Error: Usia tidak valid";
+        }
+
+        // 2. Normalisasi input string agar tidak sensitif huruf besar/kecil
+        $tanahLower = strtolower(trim($jenisTanah));
+
+        // 3. Validasi Jenis Tanah (TC-06)
+        if ($tanahLower !== 'mineral' && $tanahLower !== 'gambut') {
+            return "Error: Tanah tidak terdaftar";
+        }
+
+        // 4. Logika Fase Tumbuh (0-12 bulan)
+        if ($usiaBulan <= 12) {
+            return "Fokus Urea & ZA";
+        }
+
+        // 5. Logika Fase TBM (13-36 bulan)
+        if ($usiaBulan > 12 && $usiaBulan <= 36) {
+            return "NPK Rutin";
+        }
+
+        // 6. Logika Fase TM (> 36 bulan) dibedakan berdasarkan tanah
+        if ($usiaBulan > 36) {
+            if ($tanahLower === 'gambut') {
+                return "NPK + Ekstra Cu & Zn"; // TC-04
+            } else {
+                return "NPK + KCl"; // TC-03
+            }
+        }
+    }
+    
     public function menu()
     {
         $user = Auth::user();

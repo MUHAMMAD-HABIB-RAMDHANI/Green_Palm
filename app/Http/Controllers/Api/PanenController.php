@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use App\Models\Panen;
-use App\Models\DataKebun;
+use Illuminate\Support\Facades\Storage; // ✅ Ditambahkan untuk manajemen file foto
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Panen;
+use App\Models\DataKebun;
 
 class PanenController extends Controller
 {
@@ -19,20 +19,21 @@ class PanenController extends Controller
     // ==========================================
     public function store(Request $request)
     {
-        Log::info('Sync Panen Masuk:', $request->all());
+        Log::info('Sync Panen Masuk:', $request->except(['foto_panen']));
 
-        // 1. Validasi Input
+        // 1. Validasi Input (termasuk foto)
         $validator = Validator::make($request->all(), [
             'kebun_id' => 'required|integer|exists:data_kebun,id',
             'tanggal_panen' => 'required|date',
             'berat_total_tbs' => 'required|numeric|min:0',
-            'harga_tbs' => 'required|numeric|min:0', // ✅ Tetap terima dari Android (untuk hitung pendapatan)
+            'harga_tbs' => 'required|numeric|min:0',
             'jumlah_tbs' => 'nullable|integer|min:0',
             'berat_brondolan' => 'nullable|numeric|min:0',
             'tanggal_panen_berikutnya' => 'nullable|date',
             'upah_panen' => 'nullable|array',
             'upah_panen.*.jenis' => 'required_with:upah_panen|string',
             'upah_panen.*.jumlah' => 'required_with:upah_panen|numeric|min:0',
+            'foto_panen' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // ✅ Validasi gambar maksimal 5 MB
         ]);
 
         if ($validator->fails()) {
@@ -48,10 +49,10 @@ class PanenController extends Controller
         try {
             $user_id = Auth::id();
             
-            // ✅ Hitung Pendapatan (berat x harga per kg)
+            // Hitung Pendapatan
             $pendapatan = $request->berat_total_tbs * $request->harga_tbs;
 
-            // ✅ Proses Array Upah dengan Benar
+            // Proses Upah
             $totalUpah = 0;
             $biayaLainnya = [];
             
@@ -69,38 +70,46 @@ class PanenController extends Controller
                 }
             }
 
-            Log::info('Processed Upah:', [
-                'total_upah' => $totalUpah,
-                'biaya_lainnya' => $biayaLainnya
-            ]);
+            // Cari data lama jika operasi ini memperbarui data yang sudah ada
+            $existingPanen = Panen::where('user_id', $user_id)
+                ->where('kebun_id', $request->kebun_id)
+                ->where('tanggal_panen', $request->tanggal_panen)
+                ->first();
 
-            // ✅ Simpan/Update Data (Mencegah Duplikasi)
+            $pathFoto = $existingPanen->foto_panen ?? null;
+
+            // ✅ Proses Upload Berkas Baru
+            if ($request->hasFile('foto_panen')) {
+                // Hapus foto lama jika ada berkas pengganti
+                if ($existingPanen && $existingPanen->foto_panen && Storage::disk('public')->exists($existingPanen->foto_panen)) {
+                    Storage::disk('public')->delete($existingPanen->foto_panen);
+                }
+
+                $file = $request->file('foto_panen');
+                $namaFile = 'panen_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $pathFoto = $file->storeAs('uploads/panen', $namaFile, 'public');
+            }
+
+            // Simpan / Update ke Database
             $panen = Panen::updateOrCreate(
                 [
-                    // Kunci Pencarian (Syarat Unik)
                     'user_id' => $user_id,
                     'kebun_id' => $request->kebun_id,
                     'tanggal_panen' => $request->tanggal_panen, 
                 ],
                 [
-                    // Data yang akan disimpan/diupdate
                     'berat_total_tbs' => $request->berat_total_tbs,
                     'jumlah_tbs' => $request->jumlah_tbs ?? 0,
                     'berat_brondolan' => $request->berat_brondolan ?? 0,
                     'tanggal_panen_berikutnya' => $request->tanggal_panen_berikutnya,
                     'pendapatan' => $pendapatan,
                     'total_upah_panen' => $totalUpah,
-                    'biaya_lainnya' => !empty($biayaLainnya) ? ($biayaLainnya) : null,
+                    'biaya_lainnya' => !empty($biayaLainnya) ? $biayaLainnya : null,
+                    'foto_panen' => $pathFoto, // ✅ Simpan path foto
                 ]
             );
 
             DB::commit();
-
-            Log::info('Panen berhasil disimpan:', [
-                'id' => $panen->id,
-                'pendapatan' => $pendapatan,
-                'total_upah' => $totalUpah
-            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -111,13 +120,13 @@ class PanenController extends Controller
                     'tanggal_panen' => $panen->tanggal_panen,
                     'pendapatan' => $panen->pendapatan,
                     'total_upah_panen' => $panen->total_upah_panen,
+                    'foto_url' => $panen->foto_panen ? asset('storage/' . $panen->foto_panen) : null, // ✅ URL siap pakai di Android
                 ]
             ], 200);
 
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('DB Error: ' . $e->getMessage());
-            Log::error('Stack Trace: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal menyimpan data: ' . $e->getMessage()
@@ -138,7 +147,6 @@ class PanenController extends Controller
             ->get();
 
         $data = $panens->map(function($p) {
-            // ✅ Hitung estimasi harga per kg
             $estimasiHarga = $p->berat_total_tbs > 0 
                 ? ($p->pendapatan / $p->berat_total_tbs) 
                 : 0;
@@ -154,10 +162,11 @@ class PanenController extends Controller
                 'jumlah_tbs' => $p->jumlah_tbs ?? 0,
                 'berat_brondolan' => $p->berat_brondolan ?? 0,
                 'pendapatan' => $p->pendapatan,
-                'total_upah_panen' => $p->total_upah_panen ?? 0, // ✅ Penting!
+                'total_upah_panen' => $p->total_upah_panen ?? 0,
                 'laba_bersih' => $p->pendapatan - ($p->total_upah_panen ?? 0),
                 'estimasi_harga_per_kg' => round($estimasiHarga, 2),
                 'tanggal_panen_berikutnya' => $p->tanggal_panen_berikutnya,
+                'foto_url' => $p->foto_panen ? asset('storage/' . $p->foto_panen) : null, // ✅ Diteruskan ke Android
                 'created_at' => $p->created_at,
             ];
         });
@@ -193,7 +202,6 @@ class PanenController extends Controller
                 ? ($panen->pendapatan / $panen->berat_total_tbs) 
                 : 0;
             
-            // ✅ Parse biaya_lainnya dengan aman
             $biayaLainnya = [];
             if ($panen->biaya_lainnya) {
                 if (is_string($panen->biaya_lainnya)) {
@@ -226,7 +234,8 @@ class PanenController extends Controller
                 'tanggal_panen_berikutnya_formatted' => $panen->tanggal_panen_berikutnya 
                     ? \Carbon\Carbon::parse($panen->tanggal_panen_berikutnya)->format('d M Y') 
                     : null,
-                'biaya_lainnya' => $biayaLainnya, // ✅ Detail upah
+                'biaya_lainnya' => $biayaLainnya,
+                'foto_url' => $panen->foto_panen ? asset('storage/' . $panen->foto_panen) : null, // ✅ Diteruskan ke Android
                 'created_at' => $panen->created_at,
             ];
 
@@ -247,7 +256,7 @@ class PanenController extends Controller
     }
 
     // ==========================================
-    // 4. FUNGSI LAINNYA (Tidak berubah)
+    // 4. FUNGSI GET KEBUN LIST
     // ==========================================
     public function getKebunList()
     {
@@ -275,6 +284,9 @@ class PanenController extends Controller
         }
     }
 
+    // ==========================================
+    // 5. FUNGSI DESTROY (HAPUS DATA BESERTA FOTO)
+    // ==========================================
     public function destroy($id)
     {
         try {
@@ -286,6 +298,11 @@ class PanenController extends Controller
                     'status' => 'error',
                     'message' => 'Data tidak ditemukan atau bukan milik Anda'
                 ], 404);
+            }
+
+            // ✅ Bersihkan berkas foto di server jika ada
+            if ($panen->foto_panen && Storage::disk('public')->exists($panen->foto_panen)) {
+                Storage::disk('public')->delete($panen->foto_panen);
             }
 
             $panen->delete();

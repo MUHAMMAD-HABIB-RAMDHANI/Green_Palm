@@ -10,6 +10,29 @@ use Illuminate\Http\Request;
 
 class AdminEdukasiController extends Controller
 {
+    // FUNGSI UNTUK UNIT TEST: Validasi Input Form Video Edukasi
+    public function validasiFormVideo($judul, $url)
+    {
+        // Tetapkan nilai default sebagai 'Valid'
+        $pesan = "Valid: Video siap dipublikasikan";
+
+        // Skenario 1: Admin lupa isi judul
+        if ($judul === null || trim($judul) === "") {
+            $pesan = "Error: Judul video wajib diisi";
+        }
+        // Skenario 2: Admin isi judul, tapi lupa isi URL
+        elseif ($url === null || trim($url) === "") {
+            $pesan = "Error: URL video wajib diisi";
+        }
+        // Skenario 3: Admin isi URL, tapi formatnya bukan link (misal teks biasa)
+        elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+            $pesan = "Error: Format URL tidak valid (harus berupa link)";
+        }
+
+        // Hanya ada satu return di akhir fungsi
+        return $pesan;
+    }
+    
     public function index()
     {
         $videos = EducationVideo::orderBy('created_at', 'desc')->paginate(10);
@@ -28,7 +51,8 @@ class AdminEdukasiController extends Controller
             'url' => 'required|url'
         ]);
 
-        $video = EducationVideo::create($request->only(['title', 'url']));
+        // ✅ PERBAIKAN: Hapus variabel $video = , langsung eksekusi create
+        EducationVideo::create($request->only(['title', 'url']));
 
         // ✅ BROADCAST NOTIFICATION: Kirim 1 notifikasi yang tampil ke SEMUA user
         Notification::create([

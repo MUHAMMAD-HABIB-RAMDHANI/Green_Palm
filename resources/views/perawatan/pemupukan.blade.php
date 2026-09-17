@@ -169,6 +169,21 @@
         color: #888;
     }
 
+    .info-box {
+        background: #e6f1e3;
+        border-left: 4px solid var(--primary-green);
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        color: #444;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .info-box strong {
+        color: var(--dark-green);
+    }
+
     .step-circle {
         width: 40px;
         height: 40px;
@@ -447,6 +462,11 @@
                     <div class="step-subtitle">Selanjutnya: Selesai</div>
                 </div>
                 <div class="step-circle">2/2</div>
+            </div>
+
+            {{-- Tambahan: Penjelasan Pemupukan --}}
+            <div class="info-box">
+                <strong>Apa itu Pemupukan?</strong> Kegiatan memberikan unsur hara (pupuk) ke tanaman kelapa sawit secara rutin sesuai dosis dan jenis yang dianjurkan, untuk menjaga pertumbuhan tanaman dan mendukung produktivitas buah secara optimal.
             </div>
 
             {{-- Form Start --}}

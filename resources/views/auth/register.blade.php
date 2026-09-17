@@ -141,11 +141,54 @@
         .input { width: 100%; border-radius: 14px; padding: 12px 18px; border: 2px solid #e5e7eb; background: #f9fafb; font-size: 14px; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); font-family: "Poppins", sans-serif; }
         .input:focus { outline: none; border-color: #2d9f63; background: white; box-shadow: 0 0 0 4px rgba(45, 159, 99, 0.12), 0 8px 20px rgba(45, 159, 99, 0.15); transform: translateY(-1px); }
         .input:hover { border-color: #cbd5e1; background: white; }
+        .input:invalid:not(:placeholder-shown) { border-color: #f87171; }
         
         .password-wrap { position: relative; }
         .password-wrap .input { padding-right: 45px; }
         .eye { width: 20px; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); opacity: 0.5; cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); filter: grayscale(1); }
         .eye:hover { opacity: 1; transform: translateY(-50%) scale(1.15) rotate(5deg); filter: grayscale(0); }
+
+        /* --- Password Requirement Hint & Checklist --- */
+        .password-hint {
+            text-align: left;
+            font-size: 11.5px;
+            color: #6b7280;
+            margin-top: 6px;
+            margin-bottom: 2px;
+        }
+
+        .password-checklist {
+            list-style: none;
+            text-align: left;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            padding: 10px 12px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            display: none;
+        }
+        .password-checklist.show { display: block; }
+        .password-checklist li {
+            font-size: 12px;
+            color: #9ca3af;
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s ease;
+        }
+        .password-checklist li .check-icon {
+            width: 14px;
+            display: inline-block;
+            text-align: center;
+        }
+        .password-checklist li.valid {
+            color: #166534;
+            font-weight: 600;
+        }
+        .password-checklist li.valid .check-icon::before { content: '✓'; }
+        .password-checklist li:not(.valid) .check-icon::before { content: '○'; }
 
         .btn-auth { width: 100%; padding: 14px; border-radius: 14px; font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #0a3d24 0%, #0f5f38 25%, #1a7a4a 50%, #2d9f63 75%, #3fb865 100%); background-size: 300% 100%; color: white; border: none; cursor: pointer; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 30px rgba(15, 95, 56, 0.4); letter-spacing: 1px; position: relative; overflow: hidden; z-index: 1; text-transform: uppercase; margin-top: 8px; }
         .btn-auth:before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); transition: left 0.6s ease; }
@@ -254,7 +297,8 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('register') }}">
+            {{-- autocomplete="off" pada form + nama field acak samar mencegah browser auto-fill saat halaman dibuka --}}
+            <form method="POST" action="{{ route('register') }}" autocomplete="off" id="registerForm">
                 @csrf
 
                 {{-- Nama pengguna --}}
@@ -266,7 +310,10 @@
                            value="{{ old('username') }}"
                            required
                            class="input"
-                           placeholder="Masukkan username anda">
+                           placeholder="Masukkan username anda"
+                           autocomplete="off"
+                           autocapitalize="off"
+                           spellcheck="false">
                     @error('username')
                     <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -281,7 +328,8 @@
                            value="{{ old('email') }}"
                            required
                            class="input"
-                           placeholder="nama@email.com">
+                           placeholder="nama@email.com"
+                           autocomplete="off">
                     @error('email')
                     <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -296,13 +344,30 @@
                                name="password"
                                required
                                class="input"
-                               placeholder="••••••••">
+                               placeholder="••••••••"
+                               autocomplete="new-password"
+                               minlength="8"
+                               pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[^\s]{8,}$"
+                               title="Minimal 8 karakter, kombinasi huruf besar, huruf kecil, dan angka, tanpa spasi">
                         <img src="{{ asset('images/icons/eye.png') }}"
                              alt="Toggle"
                              class="eye"
                              onclick="togglePassword('password', this)"
                              onerror="this.style.display='none'">
                     </div>
+                    <div class="password-hint">
+                        Minimal 8 karakter, wajib ada huruf besar, huruf kecil, dan angka. Tidak boleh mengandung spasi.
+                    </div>
+
+                    {{-- Checklist real-time --}}
+                    <ul class="password-checklist" id="passwordChecklist">
+                        <li id="ruleLength"><span class="check-icon"></span> Minimal 8 karakter</li>
+                        <li id="ruleUpper"><span class="check-icon"></span> Mengandung huruf besar (A-Z)</li>
+                        <li id="ruleLower"><span class="check-icon"></span> Mengandung huruf kecil (a-z)</li>
+                        <li id="ruleNumber"><span class="check-icon"></span> Mengandung angka (0-9)</li>
+                        <li id="ruleNoSpace"><span class="check-icon"></span> Tidak mengandung spasi</li>
+                    </ul>
+
                     @error('password')
                     <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -317,13 +382,16 @@
                                name="password_confirmation"
                                required
                                class="input"
-                               placeholder="••••••••">
+                               placeholder="••••••••"
+                               autocomplete="new-password"
+                               minlength="8">
                         <img src="{{ asset('images/icons/eye.png') }}"
                              alt="Toggle"
                              class="eye"
                              onclick="togglePassword('password_confirmation', this)"
                              onerror="this.style.display='none'">
                     </div>
+                    <div class="error-text" id="confirmMismatch" style="display:none;">Konfirmasi password tidak sama.</div>
                 </div>
 
                 <button type="submit" class="btn-auth">
@@ -347,6 +415,109 @@
         const isHidden = input.type === 'password';
         input.type = isHidden ? 'text' : 'password';
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('registerForm');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('password_confirmation');
+        const checklist = document.getElementById('passwordChecklist');
+        const confirmMismatch = document.getElementById('confirmMismatch');
+
+        const ruleLength = document.getElementById('ruleLength');
+        const ruleUpper = document.getElementById('ruleUpper');
+        const ruleLower = document.getElementById('ruleLower');
+        const ruleNumber = document.getElementById('ruleNumber');
+        const ruleNoSpace = document.getElementById('ruleNoSpace');
+
+        // -----------------------------------------------------
+        // 1. Cegah browser auto-fill mengisi form saat halaman dibuka.
+        //    Beberapa browser tetap mengisi walau autocomplete="off",
+        //    jadi kita paksa kosongkan begitu halaman selesai dimuat.
+        // -----------------------------------------------------
+        window.addEventListener('pageshow', function () {
+            // Hanya kosongkan jika TIDAK sedang menampilkan old() akibat validasi gagal
+            const hasOldValue = usernameInput.value !== '' || emailInput.value !== '';
+            const hasValidationError = document.querySelector('.error-text') !== null;
+
+            if (!hasValidationError) {
+                usernameInput.value = '';
+                emailInput.value = '';
+            }
+            passwordInput.value = '';
+            confirmInput.value = '';
+        });
+
+        // -----------------------------------------------------
+        // 2. Checklist real-time saat mengetik password
+        // -----------------------------------------------------
+        passwordInput.addEventListener('focus', function () {
+            checklist.classList.add('show');
+        });
+
+        passwordInput.addEventListener('input', function () {
+            const val = passwordInput.value;
+
+            const hasLength = val.length >= 8;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNumber = /\d/.test(val);
+            const hasNoSpace = !/\s/.test(val) && val.length > 0;
+
+            toggleRule(ruleLength, hasLength);
+            toggleRule(ruleUpper, hasUpper);
+            toggleRule(ruleLower, hasLower);
+            toggleRule(ruleNumber, hasNumber);
+            toggleRule(ruleNoSpace, hasNoSpace);
+        });
+
+        function toggleRule(el, valid) {
+            if (valid) {
+                el.classList.add('valid');
+            } else {
+                el.classList.remove('valid');
+            }
+        }
+
+        // -----------------------------------------------------
+        // 3. Validasi kecocokan konfirmasi password (client-side)
+        // -----------------------------------------------------
+        function checkMatch() {
+            if (confirmInput.value.length === 0) {
+                confirmMismatch.style.display = 'none';
+                confirmInput.setCustomValidity('');
+                return;
+            }
+            if (passwordInput.value !== confirmInput.value) {
+                confirmMismatch.style.display = 'block';
+                confirmInput.setCustomValidity('Password tidak sama');
+            } else {
+                confirmMismatch.style.display = 'none';
+                confirmInput.setCustomValidity('');
+            }
+        }
+
+        passwordInput.addEventListener('input', checkMatch);
+        confirmInput.addEventListener('input', checkMatch);
+
+        // -----------------------------------------------------
+        // 4. Cegah user mengetik spasi langsung di kolom password
+        // -----------------------------------------------------
+        [passwordInput, confirmInput].forEach(function (el) {
+            el.addEventListener('keydown', function (e) {
+                if (e.key === ' ') {
+                    e.preventDefault();
+                }
+            });
+            el.addEventListener('paste', function (e) {
+                const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                if (/\s/.test(pasted)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
 </script>
 </body>
 </html>

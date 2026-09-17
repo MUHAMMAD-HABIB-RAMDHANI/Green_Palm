@@ -15,6 +15,32 @@ use App\Models\Kastrasi;
 
 class KebunController extends Controller
 {
+    public function estimasiPotensiPanen($luasHektar, $usiaTahun)
+    {
+        // Validasi Input
+        if ($luasHektar <= 0 || $usiaTahun <= 0) {
+            return "Error: Data tidak valid";
+        }
+
+        // Hitung berdasarkan usia pohon
+        if ($usiaTahun < 3) {
+            return "Potensi: 0 Ton (Belum Menghasilkan)";
+        } 
+        
+        if ($usiaTahun >= 3 && $usiaTahun <= 8) {
+            $potensi = $luasHektar * 1.5;
+            return "Potensi: " . $potensi . " Ton";
+        } 
+        
+        if ($usiaTahun >= 9 && $usiaTahun <= 15) {
+            $potensi = $luasHektar * 2.5;
+            return "Potensi: " . $potensi . " Ton";
+        } 
+        
+        // Usia di atas 15 tahun
+        $potensi = $luasHektar * 1.8;
+        return "Potensi: " . $potensi . " Ton";
+    }
     /**
      * 1. Tampilkan DAFTAR SEMUA KEBUN (Menu Utama)
      */

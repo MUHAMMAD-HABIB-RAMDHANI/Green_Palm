@@ -101,7 +101,6 @@
     .profit-value {
         font-size: 32px;
         font-weight: 800;
-        color: var(--primary-green);
         margin: 5px 0;
     }
 
@@ -177,45 +176,92 @@
     
     .biaya-item:last-child { margin-bottom: 0; }
 
-    /* --- ACTION BUTTONS --- */
-    .action-buttons {
-        padding: 20px 25px;
-        background: #fff;
-        border-top: 1px solid #eee;
-        display: flex;
-        gap: 10px;
+    /* --- FOTO BUKTI PANEN STYLES --- */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
     }
 
-    .btn {
-        flex: 1;
-        padding: 12px;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        text-align: center;
-        text-decoration: none;
+    .photo-item {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        background: #f4f4f4;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .photo-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Modal / Lightbox Pratinjau Foto */
+    .photo-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .photo-modal.active {
+        display: flex;
+    }
+
+    .photo-modal-img {
+        max-width: 90%;
+        max-height: 80vh;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        object-fit: contain;
+        animation: zoomIn 0.25s ease;
+    }
+
+    @keyframes zoomIn {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .photo-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        color: white;
+        font-size: 32px;
+        background: none;
         border: none;
         cursor: pointer;
+        line-height: 1;
+        opacity: 0.8;
         transition: 0.2s;
     }
 
-    .btn-edit {
-        background: #fff3cd;
-        color: #856404;
+    .photo-modal-close:hover {
+        opacity: 1;
     }
-    .btn-edit:hover { background: #ffeeba; }
-
-    .btn-delete {
-        background: #ffebee;
-        color: #c62828;
-    }
-    .btn-delete:hover { background: #ffcdd2; }
 
     /* Responsive */
     @media (max-width: 480px) {
         .detail-wrapper { padding: 0; }
         .detail-card { border-radius: 0; max-width: 100%; box-shadow: none; }
         .stats-grid { grid-template-columns: 1fr; }
+        .photo-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
     }
 </style>
 
@@ -236,7 +282,6 @@
             $pendapatan = $panen->pendapatan;
             $pengeluaran = $panen->total_upah_panen;
             $labaBersih = $pendapatan - $pengeluaran;
-            // Hitung balik estimasi harga per kg (jika ada berat)
             $estimasiHarga = $panen->berat_total_tbs > 0 ? ($pendapatan / $panen->berat_total_tbs) : 0;
         @endphp
 
@@ -244,7 +289,6 @@
         <div class="profit-card">
             <div class="profit-label">Keuntungan Bersih</div>
             
-            {{-- LOGIKA WARNA: Jika < 0 (Minus) pakai text-red, jika tidak pakai text-green --}}
             <div class="profit-value {{ $labaBersih < 0 ? 'text-red' : 'text-green' }}">
                 Rp {{ number_format($labaBersih, 0, ',', '.') }}
             </div>
@@ -272,7 +316,7 @@
             
             <div class="info-row">
                 <span class="info-label">Lokasi Kebun</span>
-                <span class="info-data">{{ $panen->kebun->nama_kebun }}</span>
+                <span class="info-data">{{ $panen->kebun->nama_kebun ?? '-' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Berat Total TBS</span>
@@ -307,23 +351,16 @@
         <div class="info-section">
             <div class="section-title">Rincian Pengeluaran</div>
             <div class="biaya-list">
-                
-                {{-- FIX: Pastikan data berupa array sebelum di-loop --}}
                 @php
                     $listBiaya = $panen->biaya_lainnya;
-                    
-                    // Jika terdeteksi string (kasus error double encode), decode manual
                     if (is_string($listBiaya)) {
                         $listBiaya = json_decode($listBiaya, true);
                     }
-
-                    // Pastikan null safe agar tidak error
                     if (!is_array($listBiaya)) {
                         $listBiaya = [];
                     }
                 @endphp
 
-                {{-- Loop menggunakan variabel baru $listBiaya --}}
                 @foreach($listBiaya as $biaya)
                     <div class="biaya-item">
                         <span>{{ $biaya['jenis'] ?? 'Biaya Lain' }}</span>
@@ -331,7 +368,6 @@
                     </div>
                 @endforeach
                 
-                {{-- Garis total --}}
                 <div style="border-top: 1px dashed #ccc; margin-top: 8px; padding-top: 8px; display:flex; justify-content:space-between; font-weight:700;">
                     <span>Total</span>
                     <span>Rp {{ number_format($pengeluaran, 0, ',', '.') }}</span>
@@ -340,19 +376,59 @@
         </div>
         @endif
 
-        {{-- ACTION BUTTONS (Optional) --}}
-        {{-- Jika Anda ingin menambahkan fitur Edit/Hapus --}}
-        {{-- 
-        <div class="action-buttons">
-            <a href="#" class="btn btn-edit">Edit Data</a>
-            <form action="#" method="POST" style="flex:1;">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-delete" onclick="return confirm('Hapus data panen ini?')">Hapus</button>
-            </form>
-        </div> 
-        --}}
+        {{-- SECTION: FOTO DOKUMENTASI PANEN --}}
+        @php
+            $listFoto = $panen->foto_panen;
+            if (is_string($listFoto)) {
+                $listFoto = json_decode($listFoto, true);
+            }
+            if (!is_array($listFoto)) {
+                $listFoto = [];
+            }
+        @endphp
+
+        @if(!empty($listFoto))
+        <div class="info-section">
+            <div class="section-title">Foto Dokumentasi Panen ({{ count($listFoto) }})</div>
+            <div class="photo-grid">
+                @foreach($listFoto as $foto)
+                    <div class="photo-item" onclick="openPhotoModal('{{ asset('storage/' . $foto) }}')">
+                        <img src="{{ asset('storage/' . $foto) }}" alt="Foto Panen" loading="lazy">
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
     </div>
 </div>
+
+{{-- MODAL PRATINJAU FOTO --}}
+<div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+    <button class="photo-modal-close" type="button" aria-label="Tutup">&times;</button>
+    <img id="photoModalImg" class="photo-modal-img" src="" alt="Preview Foto" onclick="event.stopPropagation()">
+</div>
+
+<script>
+    function openPhotoModal(src) {
+        const modal = document.getElementById('photoModal');
+        const modalImg = document.getElementById('photoModalImg');
+        modalImg.src = src;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePhotoModal() {
+        const modal = document.getElementById('photoModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePhotoModal();
+        }
+    });
+</script>
 
 @endsection

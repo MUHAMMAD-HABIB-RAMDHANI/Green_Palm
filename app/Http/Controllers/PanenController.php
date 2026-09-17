@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\Panen;
 use App\Models\DataKebun;
@@ -14,6 +15,24 @@ class PanenController extends Controller
     /**
      * Menampilkan halaman index dengan fitur FILTER
      */
+
+    public function validasiInputPanen($beratKg, $tanggal)
+    {
+        if ($beratKg === null || $beratKg === "") {
+            return "Error: Berat kosong";
+        }
+
+        if ($beratKg <= 0) {
+            return "Error: Berat tidak valid";
+        }
+
+        if ($tanggal === null || $tanggal === "") {
+            return "Error: Tanggal kosong";
+        }
+
+        return "Valid";
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -44,21 +63,21 @@ class PanenController extends Controller
         // Eksekusi Query
         $panens = $query->get();
 
-        // 4. Generate Daftar Tahun untuk Dropdown 
+        // 4. Generate Daftar Tahun untuk Dropdown
         // (Mengambil tahun dari data terlama s/d tahun sekarang)
         $oldestPanen = Panen::where('user_id', $userId)->orderBy('tanggal_panen', 'asc')->first();
         $startYear = $oldestPanen ? date('Y', strtotime($oldestPanen->tanggal_panen)) : date('Y');
         $currentYear = date('Y');
-        
+
         // Buat array range tahun (Misal: 2025, 2024, 2023) descending
-        $years = range($currentYear, $startYear); 
+        $years = range($currentYear, $startYear);
 
         return view('panen.index', compact(
-            'user', 
-            'kebuns', 
-            'panens', 
-            'years', 
-            'selectedYear', 
+            'user',
+            'kebuns',
+            'panens',
+            'years',
+            'selectedYear',
             'selectedKebun'
         ));
     }
@@ -90,7 +109,7 @@ class PanenController extends Controller
     }
 
     /**
-     * Menyimpan data panen beserta kalkulasi pendapatan
+     * Menyimpan data panen beserta kalkulasi pendapatan dan foto bukti panen
      */
     public function store(Request $request)
     {
@@ -107,18 +126,25 @@ class PanenController extends Controller
             ],
             'tanggal_panen' => 'required|date',
             'berat_total_tbs' => 'required|numeric|min:0',
-            'harga_tbs' => 'required|numeric|min:0', 
+            'harga_tbs' => 'required|numeric|min:0',
             'jumlah_tbs' => 'nullable|integer|min:0',
             'berat_brondolan' => 'nullable|numeric|min:0',
             'tanggal_panen_berikutnya' => 'nullable|date|after:tanggal_panen',
             'upah_panen' => 'nullable|array',
             'upah_panen.*.jenis' => 'nullable|string|max:255',
             'upah_panen.*.jumlah' => 'nullable|numeric|min:0',
+
+            // Validasi foto bukti panen (opsional, maks 5 file, maks 10MB per file)
+            'foto_panen' => 'nullable|array|max:5',
+            'foto_panen.*' => 'nullable|mimes:jpeg,jpg,png,webp,gif,bmp,heic,heif|max:10240',
         ], [
             'kebun_id.required' => 'Silakan pilih kebun terlebih dahulu.',
             'berat_total_tbs.required' => 'Berat total TBS wajib diisi.',
             'harga_tbs.required' => 'Harga TBS wajib diisi untuk menghitung pendapatan.',
             'tanggal_panen_berikutnya.after' => 'Tanggal panen berikutnya harus setelah tanggal panen.',
+            'foto_panen.max' => 'Maksimal 5 foto yang dapat diunggah.',
+            'foto_panen.*.mimes' => 'Format foto tidak didukung. Gunakan JPG, PNG, WEBP, GIF, BMP, atau HEIC/HEIF.',
+            'foto_panen.*.max' => 'Ukuran setiap foto maksimal 10MB.',
         ]);
 
         try {
@@ -142,7 +168,20 @@ class PanenController extends Controller
                 }
             }
 
-            // 4. Simpan ke Database
+            // 4. Proses upload foto bukti panen (opsional)
+            $fotoPaths = [];
+
+            if ($request->hasFile('foto_panen')) {
+                foreach ($request->file('foto_panen') as $foto) {
+                    if ($foto->isValid()) {
+                        // Disimpan di storage/app/public/panen_photos
+                        // Pastikan sudah menjalankan `php artisan storage:link`
+                        $fotoPaths[] = $foto->store('panen_photos', 'public');
+                    }
+                }
+            }
+
+            // 5. Simpan ke Database
             Panen::create([
                 'user_id' => Auth::id(),
                 'kebun_id' => $validated['kebun_id'],
@@ -151,18 +190,29 @@ class PanenController extends Controller
                 'jumlah_tbs' => $validated['jumlah_tbs'],
                 'berat_brondolan' => $validated['berat_brondolan'],
                 'tanggal_panen_berikutnya' => $validated['tanggal_panen_berikutnya'],
-                
+
                 // Simpan hasil kalkulasi pendapatan
-                'pendapatan' => $pendapatanKotor, 
-                
+                'pendapatan' => $pendapatanKotor,
+
                 'total_upah_panen' => $totalUpah,
                 'biaya_lainnya' => !empty($biayaLainnya) ? $biayaLainnya : null,
+
+                // Simpan path foto bukti panen (array of string, di-cast jadi JSON oleh model)
+                'foto_panen' => !empty($fotoPaths) ? $fotoPaths : null,
             ]);
 
             return redirect()->route('panen.index')
                 ->with('success', 'Data Panen berhasil disimpan! Pendapatan: Rp ' . number_format($pendapatanKotor, 0, ',', '.'));
 
         } catch (\Exception $e) {
+            // Jika gagal simpan ke DB, hapus foto yang sudah terlanjur ter-upload
+            // supaya tidak jadi file "orphan" di storage
+            if (!empty($fotoPaths)) {
+                foreach ($fotoPaths as $path) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
             Log::error('Error saat menyimpan panen: ' . $e->getMessage());
             return redirect()->back()
                 ->withInput()
@@ -176,7 +226,7 @@ class PanenController extends Controller
     public function show($id)
     {
         // 1. Ambil data user yang sedang login
-        $user = Auth::user(); 
+        $user = Auth::user();
 
         $panen = Panen::with('kebun')->findOrFail($id);
 
@@ -190,7 +240,7 @@ class PanenController extends Controller
     }
 
     /**
-     * Menghapus data panen
+     * Menghapus data panen beserta foto bukti panen di storage
      */
     public function destroy($id)
     {
@@ -204,6 +254,14 @@ class PanenController extends Controller
 
         // 3. Hapus data
         try {
+            // Hapus file foto fisik di storage sebelum record dihapus,
+            // agar tidak menumpuk jadi file "orphan"
+            if (!empty($panen->foto_panen)) {
+                foreach ($panen->foto_panen as $foto) {
+                    Storage::disk('public')->delete($foto);
+                }
+            }
+
             $panen->delete();
             return redirect()->route('panen.index')
                 ->with('success', 'Data panen berhasil dihapus.');
